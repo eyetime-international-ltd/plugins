@@ -9,6 +9,7 @@
 
 #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 @interface FLTFirebaseMessagingPlugin () <FIRMessagingDelegate>
+- (void)handlePushRegistration;
 @end
 #endif
 
@@ -56,6 +57,28 @@ static FlutterError *getFlutterError(NSError *error) {
   return self;
 }
 
+- (void)handlePushRegistration {
+    if (@available(iOS 10, *)) {
+      // iOS 10 or later
+      // For iOS 10 display notification (sent via APNS)
+      [UNUserNotificationCenter currentNotificationCenter].delegate = self;
+      UNAuthorizationOptions authOptions = UNAuthorizationOptionAlert |
+          UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
+      [[UNUserNotificationCenter currentNotificationCenter]
+          requestAuthorizationWithOptions:authOptions
+          completionHandler:^(BOOL granted, NSError * _Nullable error) {
+            // ...
+          }];
+    } else {
+      // iOS 10 notifications aren't available; fall back to iOS 8-9 notifications.
+      UIUserNotificationType allNotificationTypes =
+      (UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge);
+      UIUserNotificationSettings *settings =
+      [UIUserNotificationSettings settingsForTypes:allNotificationTypes categories:nil];
+      [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+    }
+}
+
 - (void)handleMethodCall:(FlutterMethodCall *)call result:(FlutterResult)result {
   NSString *method = call.method;
   if ([@"requestNotificationPermissions" isEqualToString:method]) {
@@ -70,9 +93,8 @@ static FlutterError *getFlutterError(NSError *error) {
     if ([arguments[@"badge"] boolValue]) {
       notificationTypes |= UIUserNotificationTypeBadge;
     }
-    UIUserNotificationSettings *settings =
-        [UIUserNotificationSettings settingsForTypes:notificationTypes categories:nil];
-    [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+
+    [self handlePushRegistration];
 
     result(nil);
   } else if ([@"configure" isEqualToString:method]) {
@@ -212,6 +234,27 @@ static FlutterError *getFlutterError(NSError *error) {
 - (void)messaging:(FIRMessaging *)messaging
     didReceiveMessage:(FIRMessagingRemoteMessage *)remoteMessage {
   [_channel invokeMethod:@"onMessage" arguments:remoteMessage.appData];
+}
+
+#pragma mark - User notification delegate
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler  API_AVAILABLE(ios(10.0)){
+    
+    NSLog(@"willPresentNotification");
+    [_channel invokeMethod:@"onShouldShowForegroundNotification" arguments: nil result:^(id _Nullable result) {
+        BOOL showNotification = NO;
+        if ([result isKindOfClass:[NSNumber class]]) {
+            showNotification = [result boolValue];
+        } else if ([result isKindOfClass:[FlutterError class]]) {
+            NSLog(@"Error from Flutter: %@", [result debugDescription]);;
+        }
+        
+        if (showNotification) {
+            completionHandler (UNNotificationPresentationOptionAlert);
+        } else {
+            [self->_channel invokeMethod:@"onMessage" arguments:notification.request.content.userInfo];
+            completionHandler (UNNotificationPresentationOptionNone);
+        }
+    }];
 }
 
 @end
