@@ -240,7 +240,7 @@ static FlutterError *getFlutterError(NSError *error) {
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler  API_AVAILABLE(ios(10.0)){
     
     NSLog(@"willPresentNotification");
-    [_channel invokeMethod:@"onShouldShowForegroundNotification" arguments: nil result:^(id _Nullable result) {
+    [_channel invokeMethod:@"onShouldShowForegroundNotification" arguments: notification.request.content.userInfo result:^(id _Nullable result) {
         BOOL showNotification = NO;
         if ([result isKindOfClass:[NSNumber class]]) {
             showNotification = [result boolValue];
