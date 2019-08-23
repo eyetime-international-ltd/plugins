@@ -28,18 +28,15 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
   private static final String TAG = FlutterFirebaseMessagingService.class.getSimpleName();
 
   // Firebase specific meta keys
-  private static final String NOTIFICATION_ICON_KEY =
-          "com.google.firebase.messaging.default_notification_icon";
-  private static final String FIREBASE_CHANNEL_ID_KEY =
-          "com.google.firebase.messaging.default_notification_channel_id";
-  private static final String FIREBASE_CHANNEL_DESCRIPTION_KEY =
-          "com.google.firebase.messaging.default_notification_channel_description";
+  private static final String NOTIFICATION_ICON_KEY = "com.google.firebase.messaging.default_notification_icon";
+  private static final String FIREBASE_CHANNEL_ID_KEY = "com.google.firebase.messaging.default_notification_channel_id";
+  private static final String FIREBASE_CHANNEL_DESCRIPTION_KEY = "com.google.firebase.messaging.default_notification_channel_description";
 
   private static final String DEFAULT_CHANNEL_ID = "default-channel";
   private static final String DEFAULT_CHANNEL_DESCRIPTION = "Description";
 
-  public static final String ACTION_REMOTE_MESSAGE =
-      "io.flutter.plugins.firebasemessaging.NOTIFICATION";
+  public static final String ACTION_REMOTE_MESSAGE = "io.flutter.plugins.firebasemessaging.NOTIFICATION";
+  public static final String ACTION_DISPATCH_APP = "io.flutter.plugins.firebasemessaging.DISPATCH_APP";
   public static final String EXTRA_REMOTE_MESSAGE = "notification";
 
   public static final String ACTION_TOKEN = "io.flutter.plugins.firebasemessaging.TOKEN";
@@ -66,6 +63,7 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
    */
   @Override
   public void onMessageReceived(final RemoteMessage remoteMessage) {
+    Log.d(TAG, "onMessageReceived");
     if (sShouldShowNotificationHandler == null) {
       return;
     }
@@ -112,7 +110,7 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
    * @param message
    */
   private void showNotification(final RemoteMessage message) {
-    Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
+    Intent intent = new Intent(ACTION_DISPATCH_APP);
     intent.putExtra(EXTRA_REMOTE_MESSAGE, message);
     PendingIntent pendingIntent = PendingIntent.getBroadcast(
             this, 0, intent, PendingIntent.FLAG_ONE_SHOT );

@@ -251,7 +251,9 @@ static FlutterError *getFlutterError(NSError *error) {
         if (showNotification) {
             completionHandler (UNNotificationPresentationOptionAlert);
         } else {
-            [self->_channel invokeMethod:@"onMessage" arguments:notification.request.content.userInfo];
+            // onMessage handler is now used for foreground notification onClick event
+            // enabling this will trigger onMessage if the notification is not displayed
+            // [self->_channel invokeMethod:@"onMessage" arguments:notification.request.content.userInfo];
             completionHandler (UNNotificationPresentationOptionNone);
         }
     }];

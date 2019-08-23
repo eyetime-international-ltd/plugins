@@ -56,6 +56,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_TOKEN);
     intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE);
+    intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP);
     registrar.context().registerReceiver(this, intentFilter);
 
     // Register callback for FlutterFirebaseMessagingService to be able to decide if foreground notifications
@@ -85,7 +86,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     if (action.equals(FlutterFirebaseMessagingService.ACTION_TOKEN)) {
       String token = intent.getStringExtra(FlutterFirebaseMessagingService.EXTRA_TOKEN);
       channel.invokeMethod("onToken", token);
-    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE)) {
+    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP)) {
       RemoteMessage message =
           intent.getParcelableExtra(FlutterFirebaseMessagingService.EXTRA_REMOTE_MESSAGE);
       Map<String, Object> content = parseRemoteMessage(message);
