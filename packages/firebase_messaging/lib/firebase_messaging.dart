@@ -9,7 +9,7 @@ import 'package:meta/meta.dart';
 import 'package:platform/platform.dart';
 
 typedef Future<dynamic> MessageHandler(Map<String, dynamic> message);
-typedef Future<bool> ShowForegroundNotificationRequestHandler(Map<String, String> notification);
+typedef Future<bool> ShowForegroundNotificationRequestHandler(Map<String, dynamic> message);
 
 /// Implementation of the Firebase Cloud Messaging API for Flutter.
 ///
@@ -135,7 +135,7 @@ class FirebaseMessaging {
       case "onResume":
         return _onResume(call.arguments.cast<String, dynamic>());
       case "onShouldShowForegroundNotification":
-        return _onShouldShowForegroundNotification(call.arguments.cast<String, String>());
+        return _onShouldShowForegroundNotification(call.arguments.cast<String, dynamic>());
       default:
         throw UnsupportedError("Unrecognized JSON message");
     }
