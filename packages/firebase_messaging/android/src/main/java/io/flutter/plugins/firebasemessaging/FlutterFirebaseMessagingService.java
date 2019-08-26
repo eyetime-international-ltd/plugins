@@ -22,6 +22,7 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.Result;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -41,6 +42,8 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
 
   public static final String ACTION_TOKEN = "io.flutter.plugins.firebasemessaging.TOKEN";
   public static final String EXTRA_TOKEN = "token";
+
+  private static AtomicInteger sUniqueId = new AtomicInteger(0);
 
   public interface ShouldShowNotificationHandler {
     void invoke(Map<String, String> data, MethodChannel.Result callback);
@@ -112,8 +115,9 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
   private void showNotification(final RemoteMessage message) {
     Intent intent = new Intent(ACTION_DISPATCH_APP);
     intent.putExtra(EXTRA_REMOTE_MESSAGE, message);
+    Log.d(TAG, message.getNotification().getTag());
     PendingIntent pendingIntent = PendingIntent.getBroadcast(
-            this, 0, intent, PendingIntent.FLAG_ONE_SHOT );
+            this, sUniqueId.getAndIncrement(), intent, PendingIntent.FLAG_ONE_SHOT);
 
     Bundle args;
     try {
