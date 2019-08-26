@@ -9,9 +9,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
@@ -25,6 +26,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.NewIntentListener;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +48,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     channel.setMethodCallHandler(plugin);
   }
 
-  private FirebaseMessagingPlugin(Registrar registrar, MethodChannel channel) {
+  private FirebaseMessagingPlugin(Registrar registrar, final MethodChannel channel) {
     this.registrar = registrar;
     this.channel = channel;
     FirebaseApp.initializeApp(registrar.context());
@@ -54,8 +56,22 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_TOKEN);
     intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE);
-    LocalBroadcastManager manager = LocalBroadcastManager.getInstance(registrar.context());
-    manager.registerReceiver(this, intentFilter);
+    intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP);
+    registrar.context().registerReceiver(this, intentFilter);
+
+    // Register callback for FlutterFirebaseMessagingService to be able to decide if foreground notifications
+    // should be displayed
+    FlutterFirebaseMessagingService.setShouldShowNotificationHandler(new FlutterFirebaseMessagingService.ShouldShowNotificationHandler() {
+      @Override
+      public void invoke(final Map<String, String> data, final Result callback) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+          @Override
+          public void run() {
+            channel.invokeMethod("onShouldShowForegroundNotification", data, callback);
+          }
+        });
+      }
+    });
   }
 
   // BroadcastReceiver implementation.
@@ -70,7 +86,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     if (action.equals(FlutterFirebaseMessagingService.ACTION_TOKEN)) {
       String token = intent.getStringExtra(FlutterFirebaseMessagingService.EXTRA_TOKEN);
       channel.invokeMethod("onToken", token);
-    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE)) {
+    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP)) {
       RemoteMessage message =
           intent.getParcelableExtra(FlutterFirebaseMessagingService.EXTRA_REMOTE_MESSAGE);
       Map<String, Object> content = parseRemoteMessage(message);
