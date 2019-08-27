@@ -144,6 +144,12 @@ static FlutterError *getFlutterError(NSError *error) {
     NSNumber *value = call.arguments;
     [FIRMessaging messaging].autoInitEnabled = value.boolValue;
     result(nil);
+  } else if ([@"cancelNotificationWithTag" isEqualToString:method]) {
+    NSString *tag = call.arguments;
+    if (@available(iOS 10, *)) {
+      [self cancelNotificationWithTag:tag];
+    }
+    result(nil);
   } else {
     result(FlutterMethodNotImplemented);
   }
@@ -255,6 +261,16 @@ static FlutterError *getFlutterError(NSError *error) {
             // enabling this will trigger onMessage if the notification is not displayed
             // [self->_channel invokeMethod:@"onMessage" arguments:notification.request.content.userInfo];
             completionHandler (UNNotificationPresentationOptionNone);
+        }
+    }];
+}
+
+- (void) cancelNotificationWithTag:(NSString *)tag API_AVAILABLE(ios(10.0)) {
+    [[UNUserNotificationCenter currentNotificationCenter] getDeliveredNotificationsWithCompletionHandler:^(NSArray<UNNotification *> * _Nonnull notifications) {
+        for (UNNotification* notification in notifications) {
+            if ([notification.request.content.threadIdentifier isEqualToString: tag]) {
+                [[UNUserNotificationCenter currentNotificationCenter] removeDeliveredNotificationsWithIdentifiers: [NSArray arrayWithObject:notification.request.identifier]];
+            }
         }
     }];
 }
