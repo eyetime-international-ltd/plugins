@@ -144,6 +144,8 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
               .setAutoCancel(true)
               .setContentIntent(pendingIntent)
               .setSmallIcon(resIcon)
+              .setPriority(NotificationCompat.PRIORITY_HIGH)
+              .setDefaults(NotificationCompat.DEFAULT_ALL)
               .build();
     } catch (Throwable th) {
       Log.w(TAG, "Unable to build notification");
