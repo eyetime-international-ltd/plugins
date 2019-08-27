@@ -227,7 +227,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
       result.success(null);
     } else if ("cancelNotificationWithTag".equals(call.method)) {
       final String tag = (String) call.arguments();
-      FlutterFirebaseMessagingService.getInstance().cancelNotificationWithTag(tag);
+      FlutterFirebaseMessagingService.cancelNotificationWithTag(registrar.context(), tag);
       result.success(null);
     } else {
       result.notImplemented();

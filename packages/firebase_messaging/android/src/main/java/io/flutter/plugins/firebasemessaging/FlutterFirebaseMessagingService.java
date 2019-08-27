@@ -44,29 +44,12 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
   public static final String EXTRA_TOKEN = "token";
 
   private static AtomicInteger sUniqueId = new AtomicInteger(0);
-  private static FlutterFirebaseMessagingService sInstance;
-
-  public static FlutterFirebaseMessagingService getInstance() {
-    return sInstance;
-  }
 
   public interface ShouldShowNotificationHandler {
     void invoke(Map<String, String> data, MethodChannel.Result callback);
   }
 
   private static ShouldShowNotificationHandler sShouldShowNotificationHandler = null;
-
-  @Override
-  public void onCreate() {
-    super.onCreate();
-    sInstance = this;
-  }
-
-  @Override
-  public void onDestroy() {
-    super.onDestroy();
-    sInstance = null;
-  }
 
   /**
    * Callback set by [FirebaseMessagingPlugin] to enable method call to dart code
@@ -183,7 +166,7 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
     manager.notify(message.getNotification().getTag(), 0, notification);
   }
 
-  public void cancelNotificationWithTag(final String tag) {
-    ((NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE)).cancel(tag, 0);
+  public static void cancelNotificationWithTag(final Context ctx, final String tag) {
+    ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(tag, 0);
   }
 }
