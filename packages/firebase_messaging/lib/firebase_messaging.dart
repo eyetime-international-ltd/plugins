@@ -68,7 +68,7 @@ class FirebaseMessaging {
     _onMessage = onMessage;
     _onLaunch = onLaunch;
     _onResume = onResume;
-    _onShouldShowForegroundNotification = onShouldShowForegroundNotification ?? () async {return false;};
+    _onShouldShowForegroundNotification = onShouldShowForegroundNotification ?? (Map<String, dynamic> _) async {return false;};
     _channel.setMethodCallHandler(_handleMethod);
     _channel.invokeMethod<void>('configure');
   }
