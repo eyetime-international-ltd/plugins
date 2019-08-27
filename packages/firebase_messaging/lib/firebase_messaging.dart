@@ -73,6 +73,10 @@ class FirebaseMessaging {
     _channel.invokeMethod<void>('configure');
   }
 
+  void cancelNotificationWithTag(String tag) {
+    _channel.invokeMethod<void>('cancelNotificationWithTag', tag);
+  }
+
   final StreamController<String> _tokenStreamController =
       StreamController<String>.broadcast();
 
