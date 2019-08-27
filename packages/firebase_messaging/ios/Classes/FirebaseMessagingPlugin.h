@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #import <Flutter/Flutter.h>
+#import <UserNotifications/UserNotifications.h>
 
 @interface FLTFirebaseMessagingPlugin : NSObject <FlutterPlugin>
 @end
