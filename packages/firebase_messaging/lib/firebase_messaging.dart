@@ -68,9 +68,13 @@ class FirebaseMessaging {
     _onMessage = onMessage;
     _onLaunch = onLaunch;
     _onResume = onResume;
-    _onShouldShowForegroundNotification = onShouldShowForegroundNotification ?? () async {return false;};
+    _onShouldShowForegroundNotification = onShouldShowForegroundNotification ?? (Map<String, dynamic> _) async {return false;};
     _channel.setMethodCallHandler(_handleMethod);
     _channel.invokeMethod<void>('configure');
+  }
+
+  void cancelNotificationWithTag(String tag) {
+    _channel.invokeMethod<void>('cancelNotificationWithTag', tag);
   }
 
   final StreamController<String> _tokenStreamController =

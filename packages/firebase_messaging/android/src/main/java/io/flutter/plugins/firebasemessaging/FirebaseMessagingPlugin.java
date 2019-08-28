@@ -19,6 +19,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -223,6 +224,10 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     } else if ("setAutoInitEnabled".equals(call.method)) {
       Boolean isEnabled = (Boolean) call.arguments();
       FirebaseMessaging.getInstance().setAutoInitEnabled(isEnabled);
+      result.success(null);
+    } else if ("cancelNotificationWithTag".equals(call.method)) {
+      final String tag = (String) call.arguments();
+      FlutterFirebaseMessagingService.cancelNotificationWithTag(registrar.context(), tag);
       result.success(null);
     } else {
       result.notImplemented();

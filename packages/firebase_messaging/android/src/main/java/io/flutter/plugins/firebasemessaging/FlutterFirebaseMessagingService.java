@@ -168,4 +168,7 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
     manager.notify(message.getNotification().getTag(), 0, notification);
   }
 
+  public static void cancelNotificationWithTag(final Context ctx, final String tag) {
+    ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(tag, 0);
+  }
 }
