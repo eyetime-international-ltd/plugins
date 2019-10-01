@@ -76,9 +76,15 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
       @Override
       public void success(Object obj) {
         if ((boolean) obj) {
+            Log.d(TAG, "showing notification");
           showNotification(remoteMessage);
+        } else {
+            Log.d(TAG, "dispatching to on Message");
+              Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
+              intent.putExtra(EXTRA_REMOTE_MESSAGE, remoteMessage);
+              LocalBroadcastManager.getInstance(FlutterFirebaseMessagingService.this).sendBroadcast(intent);
+          }
         }
-      }
 
       @Override
       public void error(String s, String s1, Object o) {
