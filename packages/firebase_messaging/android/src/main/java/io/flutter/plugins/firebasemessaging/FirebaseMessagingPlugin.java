@@ -13,6 +13,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
@@ -60,6 +62,9 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     intentFilter.addAction(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP);
     registrar.context().registerReceiver(this, intentFilter);
 
+      LocalBroadcastManager manager = LocalBroadcastManager.getInstance(registrar.context());
+      manager.registerReceiver(this, new IntentFilter(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE));
+
     // Register callback for FlutterFirebaseMessagingService to be able to decide if foreground notifications
     // should be displayed
     FlutterFirebaseMessagingService.setShouldShowNotificationHandler(new FlutterFirebaseMessagingService.ShouldShowNotificationHandler() {
@@ -87,7 +92,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
     if (action.equals(FlutterFirebaseMessagingService.ACTION_TOKEN)) {
       String token = intent.getStringExtra(FlutterFirebaseMessagingService.EXTRA_TOKEN);
       channel.invokeMethod("onToken", token);
-    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP)) {
+    } else if (action.equals(FlutterFirebaseMessagingService.ACTION_DISPATCH_APP) || action.equals(FlutterFirebaseMessagingService.ACTION_REMOTE_MESSAGE) ) {
       RemoteMessage message =
           intent.getParcelableExtra(FlutterFirebaseMessagingService.EXTRA_REMOTE_MESSAGE);
       Map<String, Object> content = parseRemoteMessage(message);
