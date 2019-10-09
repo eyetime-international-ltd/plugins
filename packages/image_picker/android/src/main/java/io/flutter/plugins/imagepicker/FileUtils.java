@@ -33,6 +33,7 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -97,10 +98,14 @@ class FileUtils {
       }
     } else if ("content".equalsIgnoreCase(uri.getScheme())) {
 
+      /*
+      Was removed to fix the problem of getting a .jpg for a video if Google Photos is used
+       https://github.com/flutter/flutter/issues/42315
+       */
       // Return the remote address
-      if (isGooglePhotosUri(uri)) {
-        return null;
-      }
+      // if (isGooglePhotosUri(uri)) {
+      //   return null;
+      // }
 
       return getDataColumn(context, uri, null, null);
     } else if ("file".equalsIgnoreCase(uri.getScheme())) {
