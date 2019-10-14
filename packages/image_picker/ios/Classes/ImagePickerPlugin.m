@@ -231,7 +231,7 @@ static const int SOURCE_GALLERY = 1;
 
 - (void)imagePickerController:(UIImagePickerController *)picker
     didFinishPickingMediaWithInfo:(NSDictionary<NSString *, id> *)info {
-  NSString* videoURL = [[info objectForKey:UIImagePickerControllerMediaURL] path];
+  NSURL *videoURL = [info objectForKey:UIImagePickerControllerMediaURL];
   [_imagePickerController dismissViewControllerAnimated:YES completion:nil];
   // The method dismissViewControllerAnimated does not immediately prevent
   // further didFinishPickingMediaWithInfo invocations. A nil check is necessary
@@ -241,13 +241,10 @@ static const int SOURCE_GALLERY = 1;
     return;
   }
   if (videoURL != nil) {
-    NSArray* spliteArray = [videoURL componentsSeparatedByString: @"/"];
-    NSString* lastString = [spliteArray lastObject];
     NSError *error;
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"tmp"];
-    NSString *filePath = [documentsDirectory stringByAppendingPathComponent:lastString];
-    [fileManager copyItemAtPath:videoURL toPath:filePath error:&error];
+    NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:videoURL.lastPathComponent];
+    [fileManager copyItemAtPath:videoURL.path toPath:filePath error:&error];
     self.result(filePath);
     self.result = nil;
   } else {
