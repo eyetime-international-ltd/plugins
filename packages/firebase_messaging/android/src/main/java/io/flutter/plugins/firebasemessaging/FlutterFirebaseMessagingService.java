@@ -66,6 +66,15 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
    */
   @Override
   public void onMessageReceived(final RemoteMessage remoteMessage) {
+    try {
+      final Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+      if (launchIntent != null) {
+        startActivity(launchIntent.putExtras(remoteMessage.toIntent()));
+      }
+    } catch(Throwable th) {
+      Log.e(TAG, "Unable to get launch intent");
+    }
+
     Log.d(TAG, "onMessageReceived");
     if (sShouldShowNotificationHandler == null) {
       return;
