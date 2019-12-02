@@ -71,7 +71,7 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
       if (launchIntent != null) {
         startActivity(launchIntent.putExtras(remoteMessage.toIntent()));
       }
-    } catch(Throwable th) {
+    } catch (Throwable th) {
       Log.e(TAG, "Unable to get launch intent");
     }
 
