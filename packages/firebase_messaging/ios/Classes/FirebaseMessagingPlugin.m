@@ -82,6 +82,13 @@ static FlutterError *getFlutterError(NSError *error) {
 - (void)handleMethodCall:(FlutterMethodCall *)call result:(FlutterResult)result {
   NSString *method = call.method;
   if ([@"requestNotificationPermissions" isEqualToString:method]) {
+    result(nil);
+  } else if ([@"configure" isEqualToString:method]) {
+    [FIRMessaging messaging].shouldEstablishDirectChannel = true;
+    [[UIApplication sharedApplication] registerForRemoteNotifications];
+    if (_launchNotification != nil) {
+      [_channel invokeMethod:@"onLaunch" arguments:_launchNotification];
+    }
     UIUserNotificationType notificationTypes = 0;
     NSDictionary *arguments = call.arguments;
     if ([arguments[@"sound"] boolValue]) {
@@ -96,13 +103,6 @@ static FlutterError *getFlutterError(NSError *error) {
 
     [self handlePushRegistration];
 
-    result(nil);
-  } else if ([@"configure" isEqualToString:method]) {
-    [FIRMessaging messaging].shouldEstablishDirectChannel = true;
-    [[UIApplication sharedApplication] registerForRemoteNotifications];
-    if (_launchNotification != nil) {
-      [_channel invokeMethod:@"onLaunch" arguments:_launchNotification];
-    }
     result(nil);
   } else if ([@"subscribeToTopic" isEqualToString:method]) {
     NSString *topic = call.arguments;
