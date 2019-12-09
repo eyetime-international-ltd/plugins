@@ -14,6 +14,8 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -65,7 +67,19 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
    * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
    */
   @Override
-  public void onMessageReceived(final RemoteMessage remoteMessage) {
+  public void onMessageReceived(final @NonNull RemoteMessage remoteMessage) {
+    final String type = remoteMessage.getData().get("type");
+    if (type != null && type.startsWith("m.call")) {
+      try {
+        final Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        if (launchIntent != null) {
+          startActivity(launchIntent.putExtras(remoteMessage.toIntent()));
+        }
+      } catch (Throwable th) {
+        Log.e(TAG, "Unable to get launch intent");
+      }
+    }
+
     Log.d(TAG, "onMessageReceived");
     if (sShouldShowNotificationHandler == null) {
       return;
