@@ -21,7 +21,6 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -40,7 +39,7 @@ public class FirebaseMessagingPlugin extends BroadcastReceiver
   private final Registrar registrar;
   private final MethodChannel channel;
 
-  private static final String CLICK_ACTION_VALUE = "FIREBASE_NOTIFICATION_CLICK";
+  private static final String CLICK_ACTION_VALUE = "FLUTTER_NOTIFICATION_CLICK";
   private static final String TAG = "FirebaseMessagingPlugin";
 
   public static void registerWith(Registrar registrar) {

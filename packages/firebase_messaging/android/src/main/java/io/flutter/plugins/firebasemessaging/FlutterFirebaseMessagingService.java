@@ -11,20 +11,15 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.AudioAttributes;
-import android.media.AudioManager;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
-
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.Result;
 
@@ -33,255 +28,167 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String TAG = FlutterFirebaseMessagingService.class.getSimpleName();
+  private static final String TAG = FlutterFirebaseMessagingService.class.getSimpleName();
 
-    // Firebase specific meta keys
-    private static final String NOTIFICATION_ICON_KEY = "com.google.firebase.messaging.default_notification_icon";
-    private static final String FIREBASE_CHANNEL_ID_KEY = "com.google.firebase.messaging.default_notification_channel_id";
-    private static final String FIREBASE_CHANNEL_DESCRIPTION_KEY = "com.google.firebase.messaging.default_notification_channel_description";
+  // Firebase specific meta keys
+  private static final String NOTIFICATION_ICON_KEY = "com.google.firebase.messaging.default_notification_icon";
+  private static final String FIREBASE_CHANNEL_ID_KEY = "com.google.firebase.messaging.default_notification_channel_id";
+  private static final String FIREBASE_CHANNEL_DESCRIPTION_KEY = "com.google.firebase.messaging.default_notification_channel_description";
 
-    private static final String DEFAULT_CHANNEL_ID = "default-channel";
-    private static final String CALL_CHANNEL_ID = "call-channel";
-    private static final String DEFAULT_CHANNEL_DESCRIPTION = "Description";
+  private static final String DEFAULT_CHANNEL_ID = "default-channel";
+  private static final String DEFAULT_CHANNEL_DESCRIPTION = "Description";
 
-    public static final String ACTION_REMOTE_MESSAGE = "io.flutter.plugins.firebasemessaging.NOTIFICATION";
-    public static final String ACTION_DISPATCH_APP = "io.flutter.plugins.firebasemessaging.DISPATCH_APP";
-    public static final String EXTRA_REMOTE_MESSAGE = "notification";
+  public static final String ACTION_REMOTE_MESSAGE = "io.flutter.plugins.firebasemessaging.NOTIFICATION";
+  public static final String ACTION_DISPATCH_APP = "io.flutter.plugins.firebasemessaging.DISPATCH_APP";
+  public static final String EXTRA_REMOTE_MESSAGE = "notification";
 
-    public static final String ACTION_TOKEN = "io.flutter.plugins.firebasemessaging.TOKEN";
-    public static final String EXTRA_TOKEN = "token";
+  public static final String ACTION_TOKEN = "io.flutter.plugins.firebasemessaging.TOKEN";
+  public static final String EXTRA_TOKEN = "token";
 
-    private static AtomicInteger sUniqueId = new AtomicInteger(0);
+  private static AtomicInteger sUniqueId = new AtomicInteger(0);
 
-    public interface ShouldShowNotificationHandler {
-        void invoke(Map<String, String> data, MethodChannel.Result callback);
-    }
+  public interface ShouldShowNotificationHandler {
+    void invoke(Map<String, String> data, MethodChannel.Result callback);
+  }
 
-    private static ShouldShowNotificationHandler sShouldShowNotificationHandler = null;
+  private static ShouldShowNotificationHandler sShouldShowNotificationHandler = null;
 
-    /**
-     * Callback set by [FirebaseMessagingPlugin] to enable method call to dart code
-     * Used to check if foreground notifications should be shown
-     */
-    public static void setShouldShowNotificationHandler(ShouldShowNotificationHandler handler) {
-        sShouldShowNotificationHandler = handler;
-    }
+  /**
+   * Callback set by [FirebaseMessagingPlugin] to enable method call to dart code
+   * Used to check if foreground notifications should be shown
+   */
+  public static void setShouldShowNotificationHandler(ShouldShowNotificationHandler handler) {
+    sShouldShowNotificationHandler = handler;
+  }
 
-    /**
-     * Called when message is received.
-     *
-     * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
-     */
-    @Override
-    public void onMessageReceived(final RemoteMessage remoteMessage) {
-//        try {
-//            final Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
-//            if (launchIntent != null) {
-//                startActivity(launchIntent.putExtras(remoteMessage.toIntent()));
-//            } else {
-//                Log.e(TAG, "Launch intent null");
-//            }
-//        } catch(Throwable th) {
-//            Log.e(TAG, "Unable to get launch intent");
-//        }
-
-        //TODO check if call notification
-        showCallNotification(remoteMessage);
-
-        Log.d(TAG, "onMessageReceived");
-        if (sShouldShowNotificationHandler == null) {
-            return;
-        }
-
-        showCallNotification(remoteMessage);
-
-        // Callback to check if foreground notification should be shown
-        sShouldShowNotificationHandler.invoke(remoteMessage.getData(), new Result() {
-            @Override
-            public void success(Object obj) {
-                if ((boolean) obj) {
-                    Log.d(TAG, "showing notification");
-                    showNotification(remoteMessage);
-                } else {
-                    Log.d(TAG, "dispatching to on Message");
-                    Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
-                    intent.putExtra(EXTRA_REMOTE_MESSAGE, remoteMessage);
-                    LocalBroadcastManager.getInstance(FlutterFirebaseMessagingService.this).sendBroadcast(intent);
-                }
-            }
-
-            @Override
-            public void error(String s, String s1, Object o) {
-                throw new RuntimeException("Error during foreground notification check");
-            }
-
-            @Override
-            public void notImplemented() {
-                throw new RuntimeException("Not implemented exception during foreground check");
-            }
-        });
-    }
-
-    private void showCallNotification(final RemoteMessage message) {
-
+  /**
+   * Called when message is received.
+   *
+   * @param remoteMessage Object representing the message received from Firebase Cloud Messaging.
+   */
+  @Override
+  public void onMessageReceived(final @NonNull RemoteMessage remoteMessage) {
+    final String type = remoteMessage.getData().get("type");
+    if (type != null && type.startsWith("m.call")) {
+      try {
         final Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
-        if (launchIntent == null) {
-            return;
+        if (launchIntent != null) {
+          startActivity(launchIntent.putExtras(remoteMessage.toIntent()));
         }
-//        if (launchIntent != null) {
-//            startActivity());
-//        }
-        PendingIntent incomingPendingIntent = PendingIntent.getActivity(this.getApplicationContext(), 0, launchIntent.putExtras(message.toIntent()), 0);
-        PendingIntent acceptedPendingIntent = PendingIntent.getActivity(this.getApplicationContext(), 0, launchIntent.putExtras(message.toIntent()), 0);
-
-        Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
-        intent.putExtra(EXTRA_REMOTE_MESSAGE, message);
-//        Log.d(TAG, message.getNotification().getTag());
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                this, sUniqueId.getAndIncrement(), intent, PendingIntent.FLAG_ONE_SHOT);
-
-        Bundle args;
-        try {
-            args = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
-        } catch (Throwable th) {
-            Log.w(TAG, "Unable to get package information", th);
-            return;
-        }
-
-        int resIcon = 0;
-        String channelId = CALL_CHANNEL_ID;
-        String channelDescription = DEFAULT_CHANNEL_DESCRIPTION;
-        if (args != null) {
-//            channelId = args.getString(FIREBASE_CHANNEL_ID_KEY, DEFAULT_CHANNEL_ID);
-            channelDescription = args.getString(FIREBASE_CHANNEL_DESCRIPTION_KEY, DEFAULT_CHANNEL_DESCRIPTION);
-            resIcon = args.getInt(NOTIFICATION_ICON_KEY);
-        }
-
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-
-
-        Notification notification;
-        try {
-            notification = new NotificationCompat.Builder(this.getApplicationContext(), channelId)
-                    .setContentTitle("Heee")
-                    .setContentText("Heb ob2!")
-                    .setAutoCancel(true)
-//                    .setContentIntent(pendingIntent)
-//                    .setStyle(
-//                            new NotificationCompat.BigTextStyle()
-//                                    .bigText("TestBigText"))
-                    .setSmallIcon(resIcon)
-                    .setFullScreenIntent(incomingPendingIntent, true) //Whether true or false same result
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
-                    .setDefaults(NotificationCompat.DEFAULT_ALL)
-                    .setSound(alarmSound, AudioManager.STREAM_RING)
-                    .addAction(R.drawable.common_full_open_on_phone, "sdsdf", acceptedPendingIntent)
-                    .build();
-        } catch (Throwable th) {
-            Log.w(TAG, "Unable to build notification");
-            return;
-        }
-
-        NotificationManager manager = (NotificationManager) getApplicationContext()
-                .getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // Android >= 8 introduced channels for managing notifications
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(channelId, channelDescription, importance);
-
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                    .build();
-
-            channel.setSound(alarmSound, audioAttributes);
-
-            manager.createNotificationChannel(channel);
-        }
-
-        // Notification is identified by the pair of Tag and Id.
-        // https://firebase.google.com/docs/cloud-messaging/http-server-ref
-        // In our case the Tag is set as the room_id and id defaults to 0 within firebase messaging
-        manager.notify("call", 0, notification);
+      } catch (Throwable th) {
+        Log.e(TAG, "Unable to get launch intent");
+      }
     }
 
-    /**
-     * Called when a new token for the default Firebase project is generated.
-     *
-     * @param token The token used for sending messages to this application instance. This token is
-     *              the same as the one retrieved by getInstanceId().
-     */
-    @Override
-    public void onNewToken(String token) {
-        Intent intent = new Intent(ACTION_TOKEN);
-        intent.putExtra(EXTRA_TOKEN, token);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    Log.d(TAG, "onMessageReceived");
+    if (sShouldShowNotificationHandler == null) {
+      return;
     }
 
-    /**
-     * Creates and shows a system notification (In case of app in foreground)
-     * <p>
-     * In case of an Android version >= 8 the firebase messaging notification channel is used.
-     *
-     * @param message
-     */
-    private void showNotification(final RemoteMessage message) {
-        Intent intent = new Intent(ACTION_DISPATCH_APP);
-        intent.putExtra(EXTRA_REMOTE_MESSAGE, message);
-        Log.d(TAG, message.getNotification().getTag());
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                this, sUniqueId.getAndIncrement(), intent, PendingIntent.FLAG_ONE_SHOT);
-
-        Bundle args;
-        try {
-            args = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
-        } catch (Throwable th) {
-            Log.w(TAG, "Unable to get package information", th);
-            return;
+    // Callback to check if foreground notification should be shown
+    sShouldShowNotificationHandler.invoke(remoteMessage.getData(), new Result() {
+      @Override
+      public void success(Object obj) {
+        if ((boolean) obj) {
+            Log.d(TAG, "showing notification");
+          showNotification(remoteMessage);
+        } else {
+            Log.d(TAG, "dispatching to on Message");
+              Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
+              intent.putExtra(EXTRA_REMOTE_MESSAGE, remoteMessage);
+              LocalBroadcastManager.getInstance(FlutterFirebaseMessagingService.this).sendBroadcast(intent);
+          }
         }
 
-        int resIcon = 0;
-        String channelId = DEFAULT_CHANNEL_ID;
-        String channelDescription = DEFAULT_CHANNEL_DESCRIPTION;
-        if (args != null) {
-            channelId = args.getString(FIREBASE_CHANNEL_ID_KEY, DEFAULT_CHANNEL_ID);
-            channelDescription = args.getString(FIREBASE_CHANNEL_DESCRIPTION_KEY, DEFAULT_CHANNEL_DESCRIPTION);
-            resIcon = args.getInt(NOTIFICATION_ICON_KEY);
-        }
+      @Override
+      public void error(String s, String s1, Object o) {
+        throw new RuntimeException("Error during foreground notification check");
+      }
 
-        Notification notification;
-        try {
-            notification = new NotificationCompat.Builder(this, channelId)
-                    .setContentTitle(message.getNotification().getTitle())
-                    .setContentText(message.getNotification().getBody())
-                    .setAutoCancel(true)
-                    .setContentIntent(pendingIntent)
-                    .setSmallIcon(resIcon)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setDefaults(NotificationCompat.DEFAULT_ALL)
-                    .build();
-        } catch (Throwable th) {
-            Log.w(TAG, "Unable to build notification");
-            return;
-        }
+      @Override
+      public void notImplemented() {
+        throw new RuntimeException("Not implemented exception during foreground check");
+      }
+    });
+  }
 
-        NotificationManager manager = (NotificationManager) getApplicationContext()
-                .getSystemService(Context.NOTIFICATION_SERVICE);
+  /**
+   * Called when a new token for the default Firebase project is generated.
+   *
+   * @param token The token used for sending messages to this application instance. This token is
+   *     the same as the one retrieved by getInstanceId().
+   */
+  @Override
+  public void onNewToken(String token) {
+    Intent intent = new Intent(ACTION_TOKEN);
+    intent.putExtra(EXTRA_TOKEN, token);
+    LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+  }
 
-        // Android >= 8 introduced channels for managing notifications
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(channelId, channelDescription, importance);
-            manager.createNotificationChannel(channel);
-        }
+  /**
+   * Creates and shows a system notification (In case of app in foreground)
+   *
+   * In case of an Android version >= 8 the firebase messaging notification channel is used.
+   *
+   * @param message
+   */
+  private void showNotification(final RemoteMessage message) {
+    Intent intent = new Intent(ACTION_DISPATCH_APP);
+    intent.putExtra(EXTRA_REMOTE_MESSAGE, message);
+    Log.d(TAG, message.getNotification().getTag());
+    PendingIntent pendingIntent = PendingIntent.getBroadcast(
+            this, sUniqueId.getAndIncrement(), intent, PendingIntent.FLAG_ONE_SHOT);
 
-        // Notification is identified by the pair of Tag and Id.
-        // https://firebase.google.com/docs/cloud-messaging/http-server-ref
-        // In our case the Tag is set as the room_id and id defaults to 0 within firebase messaging
-        manager.notify(message.getNotification().getTag(), 0, notification);
+    Bundle args;
+    try {
+      args = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
+    } catch (Throwable th) {
+      Log.w(TAG, "Unable to get package information", th);
+      return;
     }
 
-    public static void cancelNotificationWithTag(final Context ctx, final String tag) {
-        ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(tag, 0);
+    int resIcon = 0;
+    String channelId = DEFAULT_CHANNEL_ID;
+    String channelDescription = DEFAULT_CHANNEL_DESCRIPTION;
+    if (args != null) {
+      channelId = args.getString(FIREBASE_CHANNEL_ID_KEY, DEFAULT_CHANNEL_ID);
+      channelDescription = args.getString(FIREBASE_CHANNEL_DESCRIPTION_KEY, DEFAULT_CHANNEL_DESCRIPTION);
+      resIcon = args.getInt(NOTIFICATION_ICON_KEY);
     }
+
+    Notification notification;
+    try {
+      notification = new NotificationCompat.Builder(this, channelId)
+              .setContentTitle(message.getNotification().getTitle())
+              .setContentText(message.getNotification().getBody())
+              .setAutoCancel(true)
+              .setContentIntent(pendingIntent)
+              .setSmallIcon(resIcon)
+              .setPriority(NotificationCompat.PRIORITY_HIGH)
+              .setDefaults(NotificationCompat.DEFAULT_ALL)
+              .build();
+    } catch (Throwable th) {
+      Log.w(TAG, "Unable to build notification");
+      return;
+    }
+
+    NotificationManager manager = (NotificationManager) getApplicationContext()
+            .getSystemService(Context.NOTIFICATION_SERVICE);
+
+    // Android >= 8 introduced channels for managing notifications
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      int importance = NotificationManager.IMPORTANCE_HIGH;
+      NotificationChannel channel = new NotificationChannel(channelId, channelDescription, importance);
+      manager.createNotificationChannel(channel);
+    }
+
+    // Notification is identified by the pair of Tag and Id.
+    // https://firebase.google.com/docs/cloud-messaging/http-server-ref
+    // In our case the Tag is set as the room_id and id defaults to 0 within firebase messaging
+    manager.notify(message.getNotification().getTag(), 0, notification);
+  }
+
+  public static void cancelNotificationWithTag(final Context ctx, final String tag) {
+    ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(tag, 0);
+  }
 }
