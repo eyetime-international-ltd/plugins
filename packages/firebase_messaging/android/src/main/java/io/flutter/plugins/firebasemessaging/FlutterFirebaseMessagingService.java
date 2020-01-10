@@ -6,6 +6,7 @@ package io.flutter.plugins.firebasemessaging;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
+import android.app.NotificationChannelGroup;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -44,6 +45,9 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
 
   public static final String ACTION_TOKEN = "io.flutter.plugins.firebasemessaging.TOKEN";
   public static final String EXTRA_TOKEN = "token";
+
+  public static final int SUMMARY_ID = 0;
+  public static final String SUMMARY_GROUP_NAME = "summary";
 
   private static AtomicInteger sUniqueId = new AtomicInteger(0);
 
@@ -150,23 +154,42 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
     int resIcon = 0;
     String channelId = DEFAULT_CHANNEL_ID;
     String channelDescription = DEFAULT_CHANNEL_DESCRIPTION;
+    String roomId = message.getData().get("room_id");
+    Log.d(TAG, "ROOMID: " + roomId);
     if (args != null) {
       channelId = args.getString(FIREBASE_CHANNEL_ID_KEY, DEFAULT_CHANNEL_ID);
       channelDescription = args.getString(FIREBASE_CHANNEL_DESCRIPTION_KEY, DEFAULT_CHANNEL_DESCRIPTION);
       resIcon = args.getInt(NOTIFICATION_ICON_KEY);
     }
 
+    Notification summary;
+    Notification room_summary;
     Notification notification;
     try {
-      notification = new NotificationCompat.Builder(this, channelId)
-              .setContentTitle(message.getNotification().getTitle())
-              .setContentText(message.getNotification().getBody())
-              .setAutoCancel(true)
+      summary = new NotificationCompat.Builder(this, channelId)
+              .setContentTitle("")
+              .setContentText("")
               .setContentIntent(pendingIntent)
               .setSmallIcon(resIcon)
-              .setPriority(NotificationCompat.PRIORITY_HIGH)
-              .setDefaults(NotificationCompat.DEFAULT_ALL)
+              .setStyle(new NotificationCompat.InboxStyle()
+                      .setBigContentTitle("2 new messages"))
+              .setGroup(SUMMARY_GROUP_NAME)
+              .setGroupSummary(true)
+              //.setPriority(NotificationCompat.PRIORITY_HIGH)
               .build();
+      room_summary = new NotificationCompat.Builder(this, channelId)
+              .setContentTitle(message.getNotification().getTitle())
+              .setContentText(message.getNotification().getBody())
+              .setStyle(new NotificationCompat.InboxStyle()
+                      .setBigContentTitle("test"))
+              .setContentIntent(pendingIntent)
+              .setSmallIcon(resIcon)
+              .setGroup(SUMMARY_GROUP_NAME)
+              //.setPriority(NotificationCompat.PRIORITY_HIGH)
+              .build();
+
+      room_summary.clone()
+
     } catch (Throwable th) {
       Log.w(TAG, "Unable to build notification");
       return;
@@ -185,10 +208,12 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
     // Notification is identified by the pair of Tag and Id.
     // https://firebase.google.com/docs/cloud-messaging/http-server-ref
     // In our case the Tag is set as the room_id and id defaults to 0 within firebase messaging
-    manager.notify(message.getNotification().getTag(), 0, notification);
+    manager.notify(sUniqueId.incrementAndGet(), notification);
+    manager.notify(roomId.hashCode(), summary);
   }
 
   public static void cancelNotificationWithTag(final Context ctx, final String tag) {
     ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(tag, 0);
+    ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).getNotificationChannelGroups();
   }
 }
